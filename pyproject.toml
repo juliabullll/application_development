@@ -1,0 +1,11 @@
+[project]
+name = "my_database_project"
+version = "0.1.0"
+description = "Database project with SQLAlchemy and Alembic"
+requires-python = ">=3.8"
+dependencies = [
+    "alembic>=1.14.1",
+    "asyncpg>=0.30.0",
+    "psycopg2-binary>=2.9.10",
+    "sqlalchemy>=2.0.44",
+]

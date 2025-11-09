@@ -2,6 +2,7 @@ from datetime import datetime
 from uuid import uuid4, UUID
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from typing import List, Optional
 
 class Base(DeclarativeBase):
     pass
@@ -61,5 +62,47 @@ class Order(Base):
     address = relationship("Address", back_populates="orders")
     product = relationship("Product", back_populates="orders")
 
+from pydantic import BaseModel
+from typing import Optional
+from datetime import datetime
 
+class UserBase(BaseModel):
+    username: str
+    email: str
+    description: Optional[str] = None
+
+class UserCreate(UserBase):
+    pass
+
+class UserUpdate(BaseModel):
+    username: Optional[str] = None
+    email: Optional[str] = None
+    description: Optional[str] = None
+
+class UserResponse(UserBase):
+    id: UUID
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True  
+
+def user_to_response(user: User) -> UserResponse:
+    return UserResponse(
+        id=user.id,
+        username=user.username,
+        email=user.email,
+        description=user.description,
+        created_at=user.created_at
+    )
+
+class UsersListResponse(BaseModel):
+    """Модель для ответа со списком пользователей и общим количеством"""
+    users: List[UserResponse]
+    total_count: int
+    page: int
+    per_page: int
+    total_pages: int
+
+    class Config:
+        from_attributes = True
 

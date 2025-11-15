@@ -1,8 +1,9 @@
 import os
 from litestar import Litestar
 from litestar.di import Provide
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import create_async_engine
 
 from app.controllers.user_controller import UserController
 from app.repositories.user_repository import UserRepository

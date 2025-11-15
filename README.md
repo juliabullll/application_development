@@ -23,3 +23,4 @@ git checkout lab_3
 
 # Установить зависимости
 pip install -r requirements.txt
+pip install litestar sqlalchemy pydantic uvicorn aiosqlite alembic

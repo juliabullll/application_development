@@ -2,7 +2,6 @@ from typing import List
 from litestar import Controller, get, post, put, delete
 from litestar.params import Parameter
 from litestar.exceptions import NotFoundException
-from litestar.status_codes import HTTP_200_OK
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.user_service import UserService
@@ -18,7 +17,7 @@ class UserController(Controller):
     async def get_user_by_id(
         self,
         user_service: UserService,
-        session: AsyncSession,
+        db_session: AsyncSession,  # Изменили session на db_session
         user_id: str,
     ) -> UserResponse:
         """Получить пользователя по ID"""
@@ -29,7 +28,7 @@ class UserController(Controller):
         except ValueError:
             raise NotFoundException(detail=f"Invalid user ID format: {user_id}")
         
-        user = await user_service.get_by_id(session, user_uuid)
+        user = await user_service.get_by_id(db_session, user_uuid)  # Исправлено на db_session
         if not user:
             raise NotFoundException(detail=f"User with ID {user_id} not found")
         
@@ -39,16 +38,14 @@ class UserController(Controller):
     async def get_all_users(
         self,
         user_service: UserService,
-        session: AsyncSession,
+        db_session: AsyncSession,  # Изменили session на db_session
         count: int = Parameter(gt=0, le=100, default=10),
         page: int = Parameter(gt=0, default=1),
     ) -> UsersListResponse:
         """Получить список пользователей с пагинацией и общим количеством"""
-        users = await user_service.get_by_filter(session, count, page)
+        users = await user_service.get_by_filter(db_session, count, page)  # Исправлено на db_session
         
-
-        total_count = await user_service.get_total_count(session)
-  
+        total_count = await user_service.get_total_count(db_session)  # Исправлено на db_session
         total_pages = (total_count + count - 1) // count  
         
         return UsersListResponse(
@@ -63,20 +60,18 @@ class UserController(Controller):
     async def create_user(
         self,
         user_service: UserService,
-        session: AsyncSession,
+        db_session: AsyncSession,  # Изменили session на db_session
         user_data: UserCreate,
     ) -> UserResponse:
         """Создать нового пользователя"""
-
-        user_dict = user_data.dict()
-        user = await user_service.create(session, user_dict)
+        user = await user_service.create(db_session, user_data)  # Исправлено на db_session
         return user_to_response(user)
 
     @delete("/{user_id:str}")
     async def delete_user(
         self,
         user_service: UserService,
-        session: AsyncSession,
+        db_session: AsyncSession,  # Изменили session на db_session
         user_id: str,
     ) -> None:
         """Удалить пользователя"""
@@ -87,16 +82,15 @@ class UserController(Controller):
         except ValueError:
             raise NotFoundException(detail=f"Invalid user ID format: {user_id}")
         
-        success = await user_service.delete(session, user_uuid)
+        success = await user_service.delete(db_session, user_uuid)  # Исправлено на db_session
         if not success:
             raise NotFoundException(detail=f"User with ID {user_id} not found")
-        
 
     @put("/{user_id:str}")
     async def update_user(
         self,
         user_service: UserService,
-        session: AsyncSession,
+        db_session: AsyncSession,  # Изменили session на db_session
         user_id: str,
         user_data: UserUpdate,
     ) -> UserResponse:
@@ -108,8 +102,7 @@ class UserController(Controller):
         except ValueError:
             raise NotFoundException(detail=f"Invalid user ID format: {user_id}")
         
-        update_dict = user_data.dict(exclude_unset=True)
-        user = await user_service.update(session, user_uuid, update_dict)
+        user = await user_service.update(db_session, user_uuid, user_data)  # Исправлено на db_session
         
         if not user:
             raise NotFoundException(detail=f"User with ID {user_id} not found")

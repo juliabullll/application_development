@@ -2,9 +2,8 @@ from typing import List, Optional
 from uuid import UUID
 from sqlalchemy import select, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.models import User
-from app.models import UserCreate, UserUpdate, UserResponse, user_to_response
-from sqlalchemy import select, func
+from app.models import User, UserCreate, UserUpdate
+from sqlalchemy import func
 
 class UserRepository:
     
@@ -33,15 +32,12 @@ class UserRepository:
         query = query.offset(offset).limit(count)
         
         result = await session.execute(query)
-        return result.scalars().all()
+        users = result.scalars().all()
+        return list(users)  # Явно конвертируем в List
 
     async def create(self, session: AsyncSession, user_data: UserCreate) -> User:
-        
-        db_user = User(
-            username=user_data.username,
-            email=user_data.email,
-            description=user_data.description
-        )
+        user_dict = user_data.dict()
+        db_user = User(**user_dict)
         
         session.add(db_user)
         await session.commit()
@@ -75,7 +71,6 @@ class UserRepository:
         return await self.get_by_id(session, user_id)
 
     async def delete(self, session: AsyncSession, user_id: UUID) -> bool:
-    
         existing_user = await self.get_by_id(session, user_id)
         if not existing_user:
             return False
@@ -87,23 +82,9 @@ class UserRepository:
         
         return True
 
-        from sqlalchemy import select, func  # Добавляем func для подсчета
-
-    
     async def get_total_count(self, session: AsyncSession, **kwargs) -> int:
-        """
-        Получить общее количество пользователей (для пагинации)
-        
-        Args:
-            session: Асинхронная сессия SQLAlchemy
-            **kwargs: Параметры фильтрации
-            
-        Returns:
-            int: Общее количество пользователей
-        """
         query = select(func.count(User.id))
         
-
         if 'username' in kwargs:
             query = query.where(User.username == kwargs['username'])
         if 'email' in kwargs:

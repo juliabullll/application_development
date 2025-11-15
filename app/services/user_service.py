@@ -3,7 +3,7 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repositories.user_repository import UserRepository
-from app.models import User
+from app.models import User, UserCreate, UserUpdate
 
 
 class UserService:
@@ -42,15 +42,15 @@ class UserService:
             session, count, page, **kwargs
         )
 
-    async def create(self, session: AsyncSession, user_data: dict) -> User:
+    async def create(self, session: AsyncSession, user_data: UserCreate) -> User:
         """
         Создать нового пользователя
         """
         # Базовая валидация
-        if not user_data.get('username') or not user_data.get('email'):
+        if not user_data.username or not user_data.email:
             raise ValueError("Username and email are required")
             
-        if '@' not in user_data.get('email', ''):
+        if '@' not in user_data.email:
             raise ValueError("Invalid email format")
         
         return await self.user_repository.create(session, user_data)
@@ -59,7 +59,7 @@ class UserService:
         self, 
         session: AsyncSession, 
         user_id: UUID, 
-        user_data: dict
+        user_data: UserUpdate
     ) -> Optional[User]:
         """
         Обновить данные пользователя
@@ -68,9 +68,8 @@ class UserService:
         if not existing_user:
             return None
             
-        if 'email' in user_data and user_data['email']:
-            if '@' not in user_data['email']:
-                raise ValueError("Invalid email format")
+        if user_data.email and '@' not in user_data.email:
+            raise ValueError("Invalid email format")
                 
         return await self.user_repository.update(session, user_id, user_data)
 

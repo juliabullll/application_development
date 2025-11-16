@@ -88,3 +88,26 @@ class UserService:
         Получить общее количество пользователей
         """
         return await self.user_repository.get_total_count(session, **kwargs)
+    
+    async def create(self, session: AsyncSession, user_data: UserCreate) -> User:
+        """
+        Создать нового пользователя
+        """
+        # Детальная отладка
+        print(f"Creating user with data: {user_data}")
+        print(f"Username: {user_data.username}, Email: {user_data.email}")
+        
+        # Базовая валидация
+        if not user_data.username or not user_data.email:
+            raise ValueError("Username and email are required")
+            
+        if '@' not in user_data.email:
+            raise ValueError("Invalid email format")
+        
+        try:
+            result = await self.user_repository.create(session, user_data)
+            print(f"User created successfully: {result.id}")
+            return result
+        except Exception as e:
+            print(f"Error creating user: {e}")
+            raise

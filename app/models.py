@@ -3,6 +3,7 @@ from uuid import uuid4, UUID
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from typing import List, Optional
+from pydantic import BaseModel, ConfigDict
 
 class Base(DeclarativeBase):
     pass
@@ -11,7 +12,7 @@ class User(Base):
     __tablename__ = 'users'
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     username: Mapped[str] = mapped_column(nullable=False, unique=True)
-    description: Mapped[str] = mapped_column(nullable=True)
+    description: Mapped[Optional[str]] = mapped_column(nullable=True)
     email: Mapped[str] = mapped_column(nullable=False, unique=True)
     created_at: Mapped[datetime] = mapped_column(default=datetime.now)
 
@@ -41,6 +42,7 @@ class Product(Base):
     name: Mapped[str] = mapped_column(nullable=False)
     description: Mapped[str] = mapped_column()
     price: Mapped[float] = mapped_column(nullable=False)
+    quantity: Mapped[int] = mapped_column(default=0)
     created_at: Mapped[datetime] = mapped_column(default=datetime.now)
     updated_at: Mapped[datetime] = mapped_column(default=datetime.now, onupdate=datetime.now)
 
@@ -62,10 +64,7 @@ class Order(Base):
     address = relationship("Address", back_populates="orders")
     product = relationship("Product", back_populates="orders")
 
-from pydantic import BaseModel
-from typing import Optional
-from datetime import datetime
-
+# Pydantic модели
 class UserBase(BaseModel):
     username: str
     email: str
@@ -83,8 +82,7 @@ class UserResponse(UserBase):
     id: UUID
     created_at: datetime
     
-    class Config:
-        from_attributes = True  
+    model_config = ConfigDict(from_attributes=True)
 
 def user_to_response(user: User) -> UserResponse:
     return UserResponse(
@@ -103,6 +101,47 @@ class UsersListResponse(BaseModel):
     per_page: int
     total_pages: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
+
+class ProductBase(BaseModel):
+    name: str
+    description: str
+    price: float
+    quantity: int = 0
+
+class ProductCreate(ProductBase):
+    pass
+
+class ProductUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    price: Optional[float] = None
+
+class ProductResponse(ProductBase):
+    id: UUID
+    created_at: datetime
+    updated_at: datetime
+    
+    model_config = ConfigDict(from_attributes=True)
+ 
+class OrderBase(BaseModel):
+    user_id: UUID
+    address_id: UUID
+    product_id: UUID
+    quantity: int
+    status: str
+
+class OrderCreate(OrderBase):
+    pass
+
+class OrderUpdate(BaseModel):
+    quantity: Optional[int] = None
+    status: Optional[str] = None
+
+class OrderResponse(OrderBase):
+    id: UUID
+    created_at: datetime
+    updated_at: datetime
+    
+    model_config = ConfigDict(from_attributes=True)
 

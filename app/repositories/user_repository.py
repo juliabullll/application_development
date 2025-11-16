@@ -94,3 +94,14 @@ class UserRepository:
         
         result = await session.execute(query)
         return result.scalar_one()
+    
+    async def create(self, session: AsyncSession, user_data: UserCreate) -> User:
+  
+        user_dict = user_data.model_dump()
+        db_user = User(**user_dict)
+    
+        session.add(db_user)
+        await session.commit()
+        await session.refresh(db_user)
+    
+        return db_user

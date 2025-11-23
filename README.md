@@ -6,6 +6,7 @@
 - **Лабораторная работа №2** - тег `lab_2`
 - **Лабораторная работа №3** - тег `lab_3` - CRUD API с трехуровневой архитектурой
 - **Лабораторная работа №4** - тег `lab_4` - Комплексное тестирование приложения
+- **Лабораторная работа №5** - тег `lab_5` - Инструменты качества кода и Docker-контейнеризация
 
 ## Быстрый запуск приложения (для проверки ЛР №3) 
 
@@ -19,9 +20,10 @@
 git clone https://github.com/juliabullll/application_development.git
 cd application_development
 
-# Перейти на тег лабораторной работы №3
+# Перейти на тег лабораторной работы 
 git checkout lab_3
 git checkout lab_4
+git checkout lab_5
 # Установить зависимости
 pip install -r requirements.txt
 pip install litestar sqlalchemy pydantic uvicorn aiosqlite alembic
@@ -32,3 +34,7 @@ pytest tests/ -v
 pytest tests/test_repositories/ -v -s          # Интеграционные тесты
 pytest tests/test_services/ -v -s              # Mock тесты
 pytest tests/test_api.py -v -s --asyncio-mode=auto  # API тесты
+
+# Запуск приложения в Docker
+docker-compose up --build
+# Приложение доступно по: http://localhost:8000

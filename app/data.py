@@ -1,80 +1,90 @@
+import os
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from app.models import User, Address
 
-connect_url = "sqlite:///test.db"
+from app.models import Address, User
 
-engine = create_engine(
-    connect_url, 
-    echo=True  
+# Используем переменную окружения или значение по умолчанию
+CONNECT_URL = (
+    os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./test.db")
+    .replace("+aiosqlite", "")
+    .replace("+asyncpg", "")
 )
 
-session_factory = sessionmaker(engine)
 
 def add_users_and_addresses():
-    
+    engine = create_engine(CONNECT_URL, echo=True)
+    session_factory = sessionmaker(engine)
+
     with session_factory() as session:
-        
+        # Создаем пользователей
         user1 = User(username="john_doe", email="john@example.com")
+        user2 = User(username="alice_smith", email="alice123@example.com")
+        user3 = User(username="bob_johnson", email="bobjoh@example.com")
+        user4 = User(username="emma_wilson", email="emmochka@example.com")
+        user5 = User(username="mike_brown", email="mike456@example.com")
+
+        # Сначала сохраняем пользователей чтобы получить их ID
+        session.add_all([user1, user2, user3, user4, user5])
+        session.flush()  # Получаем ID пользователей
+
+        # Теперь создаем адреса с правильными user_id
         address1 = Address(
-            user=user1.id,
+            user_id=user1.id,
             street="3-5-1 Marunouchi",
-            city="Tokyo", 
+            city="Tokyo",
             province="Tokyo",
             zip_code="100-0005",
             country="Japan",
-            is_primary=True
+            is_primary=True,
         )
-        user1.addresses.append(address1)
 
-        user2 = User(username="alice_smith", email="alice123@example.com")
         address2 = Address(
+            user_id=user2.id,
             street="45 Oxford Street",
             city="London",
             province="England",
             zip_code="W1D 2EB",
-            country="United Kingdom", 
-            is_primary=True
+            country="United Kingdom",
+            is_primary=True,
         )
-        user2.addresses.append(address2)
-        
-        user3 = User(username="bob_johnson", email="bobjoh@example.com")
+
         address3 = Address(
+            user_id=user3.id,
             street="Friedrichstraße 15",
             city="Berlin",
             province="Berlin",
             zip_code="10117",
             country="Germany",
-            is_primary=True
+            is_primary=True,
         )
-        user3.addresses.append(address3)
-        
-        user4 = User(username="emma_wilson", email="emmochka@example.com")
+
         address4 = Address(
-            street="72 Rue de Rivoli", 
+            user_id=user4.id,
+            street="72 Rue de Rivoli",
             city="Paris",
             province="Île-de-France",
             zip_code="75004",
             country="France",
-            is_primary=True
+            is_primary=True,
         )
-        user4.addresses.append(address4)
-       
-        user5 = User(username="mike_brown", email="mike456@example.com")
+
         address5 = Address(
+            user_id=user5.id,
             street="123 Main Street",
             city="New York",
-            province="NY", 
+            province="NY",
             zip_code="10001",
             country="USA",
-            is_primary=True
+            is_primary=True,
         )
-        user5.addresses.append(address5)
-        
-        session.add_all([user1, address1, user2, address2, user3, address3, 
-                        user4, address4, user5, address5])
+
+        # Добавляем адреса
+        session.add_all([address1, address2, address3, address4, address5])
         session.commit()
-    
+        print("Test users and addresses added successfully!")
+
 
 if __name__ == "__main__":
     add_users_and_addresses()

@@ -228,3 +228,5 @@ class TestUserControllerAPI:
         response = client.post("/users", json=user_data)
         assert response.status_code == 500 
         assert response.status_code >= 500
+
+        

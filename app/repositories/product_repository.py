@@ -1,100 +1,67 @@
-from typing import List, Optional
+from typing import Optional, List
 from uuid import UUID
-from sqlalchemy import select, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.models import Product, ProductCreate, ProductUpdate
-from sqlalchemy import func
+from sqlalchemy import select, update, and_
+from app.models.database_models import Product
+
 
 class ProductRepository:
-    """Репозиторий для работы с продуктами"""
+    async def create(self, session: AsyncSession, product_data: dict):
+        """Создание нового продукта"""
+        product = Product(**product_data)
+        session.add(product)
+        await session.flush()
+        return product
     
     async def get_by_id(self, session: AsyncSession, product_id: UUID) -> Optional[Product]:
-        """Получить продукт по ID"""
-        query = select(Product).where(Product.id == product_id)
-        result = await session.execute(query)
+        """Получение продукта по ID"""
+        result = await session.execute(
+            select(Product).where(Product.id == product_id)
+        )
         return result.scalar_one_or_none()
-
-    async def get_by_filter(
-        self, 
-        session: AsyncSession, 
-        count: int, 
-        page: int, 
-        **kwargs
-    ) -> List[Product]:
-        """Получить список продуктов с фильтрацией и пагинацией"""
-        offset = (page - 1) * count
-        
-        query = select(Product)
-        if 'name' in kwargs:
-            query = query.where(Product.name == kwargs['name'])
-        if 'description' in kwargs:
-            query = query.where(Product.description == kwargs['description'])
-        
-        query = query.offset(offset).limit(count)
-        
-        result = await session.execute(query)
-        products = result.scalars().all()
-        return list(products)
-
-    async def create(self, session: AsyncSession, product_data: ProductCreate) -> Product:
-        """Создать новый продукт"""
-        # Используем model_dump для Pydantic v2
-        product_dict = product_data.model_dump()
-        db_product = Product(**product_dict)
-        
-        session.add(db_product)
-        await session.commit()
-        await session.refresh(db_product)
-        
-        return db_product
-
-    async def update(
-        self, 
-        session: AsyncSession, 
-        product_id: UUID, 
-        product_data: ProductUpdate
-    ) -> Optional[Product]:
-        """Обновить данные продукта"""
-        existing_product = await self.get_by_id(session, product_id)
-        if not existing_product:
-            return None
-        
-        update_data = product_data.model_dump(exclude_unset=True)
-        
-        if not update_data:
-            return existing_product
-        
-        query = (
+    
+    async def update(self, session: AsyncSession, product_id: UUID, update_data: dict) -> Optional[Product]:
+        """Обновление продукта"""
+        await session.execute(
             update(Product)
             .where(Product.id == product_id)
             .values(**update_data)
         )
-        
-        await session.execute(query)
-        await session.commit()
+        await session.flush()
         return await self.get_by_id(session, product_id)
-
-    async def delete(self, session: AsyncSession, product_id: UUID) -> bool:
-        """Удалить продукт"""
-        existing_product = await self.get_by_id(session, product_id)
-        if not existing_product:
-            return False
+    
+    async def get_all(
+        self, 
+        session: AsyncSession,
+        category: Optional[str] = None,
+        available_only: bool = False,
+        limit: int = 50,
+        offset: int = 0
+    ) -> List[Product]:
+        """Получение всех продуктов с фильтрами"""
+        query = select(Product)
         
-        query = delete(Product).where(Product.id == product_id)
+        if category:
+            query = query.where(Product.category == category)
         
-        await session.execute(query)
-        await session.commit()
+        if available_only:
+            query = query.where(and_(Product.is_available == True, Product.quantity > 0))
         
-        return True
-
-    async def get_total_count(self, session: AsyncSession, **kwargs) -> int:
-        """Получить общее количество продуктов"""
-        query = select(func.count(Product.id))
-        
-        if 'name' in kwargs:
-            query = query.where(Product.name == kwargs['name'])
-        if 'description' in kwargs:
-            query = query.where(Product.description == kwargs['description'])
+        query = query.limit(limit).offset(offset)
         
         result = await session.execute(query)
-        return result.scalar_one()
+        return result.scalars().all()
+    
+    async def get_low_stock(
+        self, 
+        session: AsyncSession,
+        threshold: int = 10
+    ) -> List[Product]:
+        """Получение продуктов с низким запасом"""
+        result = await session.execute(
+            select(Product)
+            .where(Product.quantity <= threshold)
+            .where(Product.is_available == True)
+            .order_by(Product.quantity.asc())
+        )
+        return result.scalars().all()

@@ -66,7 +66,7 @@ class Order(Base):
     quantity: Mapped[int] = mapped_column(default=1)
     status: Mapped[str] = mapped_column(
         default="pending"
-    )  # pending, completed, cancelled
+    )  
     created_at: Mapped[datetime] = mapped_column(default=datetime.now)
     updated_at: Mapped[datetime] = mapped_column(
         default=datetime.now, onupdate=datetime.now
@@ -77,7 +77,7 @@ class Order(Base):
     product = relationship("Product", back_populates="orders")
 
 
-# Pydantic модели
+
 class UserBase(BaseModel):
     username: str
     email: str
@@ -171,3 +171,5 @@ class OrderResponse(OrderBase):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+

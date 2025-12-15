@@ -1,22 +1,23 @@
+import sys
+import os
+from pathlib import Path
+
+# Добавляем путь к проекту
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
+
 from sqlalchemy import select
 
 from app.data import session_factory
-from app.models import Address, Order, Product, User
-
+from app.models.database_models import Address, Order, Product, User
 
 def add_products_and_orders():
-
     with session_factory() as session:
-
         products = [
             Product(name="Ноутбук", description="Игровой ноутбук Asus", price=999.99),
             Product(name="Смартфон", description="Samsung", price=599.99),
-            Product(
-                name="Наушники", description="Беспроводные наушники Apple", price=199.99
-            ),
-            Product(
-                name="Планшет", description="Графический планшет XP-Pen", price=399.99
-            ),
+            Product(name="Наушники", description="Беспроводные наушники Apple", price=199.99),
+            Product(name="Планшет", description="Графический планшет XP-Pen", price=399.99),
             Product(name="Часы", description="Умные часы Huawei", price=99.99),
         ]
 
@@ -66,7 +67,7 @@ def add_products_and_orders():
 
         session.add_all(orders)
         session.commit()
-
+        print("Products and orders added successfully!")
 
 if __name__ == "__main__":
     add_products_and_orders()

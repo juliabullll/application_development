@@ -5,6 +5,7 @@ from uuid import UUID, uuid4
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from datetime import date 
 
 
 class Base(DeclarativeBase):
@@ -75,9 +76,22 @@ class Order(Base):
     user = relationship("User", back_populates="orders")
     address = relationship("Address", back_populates="orders")
     product = relationship("Product", back_populates="orders")
+    daily_reports = relationship("DailyOrderReport", back_populates="order", cascade="all, delete-orphan")
 
-
-
+class DailyOrderReport(Base):
+    __tablename__ = "daily_order_reports"
+    
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    report_at: Mapped[date] = mapped_column(nullable=False, index=True)
+    order_id: Mapped[UUID] = mapped_column(ForeignKey("orders.id"), nullable=False)
+    count_product: Mapped[int] = mapped_column(default=0)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.now)
+    
+    order: Mapped["Order"] = relationship(back_populates="daily_reports")
+    
+    def __repr__(self):
+        return f"<DailyOrderReport {self.report_at} order={self.order_id}>"
+    
 class UserBase(BaseModel):
     username: str
     email: str
@@ -170,6 +184,20 @@ class OrderResponse(OrderBase):
     created_at: datetime
     updated_at: datetime
 
+    model_config = ConfigDict(from_attributes=True)
+
+class DailyOrderReportBase(BaseModel):
+    report_at: date
+    order_id: UUID
+    count_product: int = 0
+
+class DailyOrderReportCreate(DailyOrderReportBase):
+    pass
+
+class DailyOrderReportResponse(DailyOrderReportBase):
+    id: UUID
+    created_at: datetime
+    
     model_config = ConfigDict(from_attributes=True)
 
 

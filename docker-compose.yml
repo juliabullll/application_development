@@ -1,55 +1,54 @@
+version: '3.8'
+
 services:
   web:
     build: .
+    container_name: app-web
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: "sqlite+aiosqlite:///./test.db"
-      HOST: 0.0.0.0
-      PORT: 8000
-      # RabbitMQ - внутри Docker сети используем имя сервиса
-      RABBITMQ_HOST: "rabbitmq"
-      RABBITMQ_PORT: "5672"
-      RABBITMQ_USER: "guest"
-      RABBITMQ_PASS: "guest"
-      # Redis
-      REDIS_URL: "redis://redis:6379"
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-      redis:
-        condition: service_started
+      - DATABASE_URL=sqlite+aiosqlite:///./test.db
+      - REDIS_URL=redis://redis:6379
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
     volumes:
-      - .:/app
-    command: >
-      bash -c "sleep 10 && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+      - ./app:/app/app
+      - ./scripts:/app/scripts
+    depends_on:
+      - redis
+      - rabbitmq
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  redis:
+    image: redis:7-alpine
+    container_name: app-redis
+    ports:
+      - "6379:6379"
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
-    hostname: rabbitmq
+    container_name: app-rabbitmq
     ports:
       - "5672:5672"
       - "15672:15672"
     environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
-      RABBITMQ_DEFAULT_VHOST: /
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 40s
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
 
-  redis:
-    image: redis:7-alpine
-    container_name: myproject_redis
-    ports:
-      - "6379:6379"
-    restart: unless-stopped
-    command: redis-server --appendonly yes
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+  cron:
+    build:
+      context: .
+      dockerfile: Dockerfile.cron
+    container_name: app-cron
+    depends_on:
+      - web
+    environment:
+      - DATABASE_URL=sqlite+aiosqlite:///./test.db
+      - PYTHONPATH=/app
+    volumes:
+      - ./scripts:/app/scripts
+      - ./app:/app/app
+      - cron_logs:/var/log
+    command: cron -f -L 15
+
+volumes:
+  cron_logs:
